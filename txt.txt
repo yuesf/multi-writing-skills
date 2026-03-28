@@ -1,0 +1,7 @@
+
+wechat-publisher
+https://github.com/0731coderlee-sudo/wechat-publisher
+wenyan-cli
+https://github.com/caol64/wenyan-cli
+md2wechat-skill
+https://github.com/geekjourneyx/md2wechat-skill
