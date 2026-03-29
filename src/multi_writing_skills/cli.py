@@ -201,6 +201,15 @@ def convert(
             if title_match:
                 title = title_match.group(1)
     else:
+        # Markdown 文件尝试从内容提取标题（第一个 # 开头的行）
+        import re
+        # 匹配 # 标题，支持 # Title 或者 ## Title，取第一个
+        title_match = re.search(r'^\s*#+\s+(.+)$', content, re.MULTILINE)
+        if title_match:
+            title = title_match.group(1).strip()
+            # 移除标题行，避免正文中重复显示标题
+            content = re.sub(r'^\s*#+\s+.+\n?', '', content, count=1, flags=re.MULTILINE)
+    else:
         # Markdown 转换
         html_content: str
         first_platform = platform.split(",")[0].strip() if platform else "default"
