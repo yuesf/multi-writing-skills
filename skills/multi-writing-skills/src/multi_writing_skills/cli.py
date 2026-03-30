@@ -209,7 +209,7 @@ def convert(
             title = title_match.group(1).strip()
             # 移除标题行，避免正文中重复显示标题
             content = re.sub(r'^\s*#+\s+.+\n?', '', content, count=1, flags=re.MULTILINE)
-
+    else:
         # Markdown 转换
         html_content: str
         first_platform = platform.split(",")[0].strip() if platform else "default"

@@ -2,16 +2,6 @@
 AI 去痕模块
 
 去除 AI 写作痕迹，使文章更加自然人性化。
-
-支持的 Provider:
-- openai: OpenAI GPT 系列
-- qwen: 通义千问 (阿里云 DashScope)
-- doubao: 豆包 (字节跳动火山引擎)
-- minimax: MiniMax
-- moonshot: Moonshot (月之暗面)
-- zhipu: 智谱 GLM
-- hunyuan: 腾讯混元
-- yi: 零一万物 Yi 系列
 """
 
 from dataclasses import dataclass
@@ -27,65 +17,6 @@ class Intensity(str, Enum):
     LIGHT = "light"  # 轻度：保留大部分原文
     MEDIUM = "medium"  # 中度：适度调整
     HEAVY = "heavy"  # 重度：大幅改写
-
-
-class Provider(str, Enum):
-    """支持的 AI 提供商"""
-
-    OPENAI = "openai"
-    QWEN = "qwen"
-    DOUBAO = "doubao"
-    MINIMAX = "minimax"
-    MOONSHOT = "moonshot"
-    ZHIPU = "zhipu"
-    HUNYUAN = "hunyuan"
-    YI = "yi"
-    CUSTOM = "custom"  # 自定义 provider
-
-
-# Provider 配置映射
-PROVIDER_CONFIG = {
-    Provider.OPENAI: {
-        "name": "OpenAI",
-        "base_url": "https://api.openai.com/v1",
-        "default_model": "gpt-4",
-    },
-    Provider.QWEN: {
-        "name": "通义千问",
-        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "default_model": "qwen-plus",
-    },
-    Provider.DOUBAO: {
-        "name": "豆包",
-        "base_url": "https://ark.cn-beijing.volces.com/api/v3",
-        "default_model": "doubao-pro-32k",
-    },
-    Provider.MINIMAX: {
-        "name": "MiniMax",
-        "base_url": "https://api.minimax.chat/v1",
-        "default_model": "MiniMax-Text-01",
-    },
-    Provider.MOONSHOT: {
-        "name": "Moonshot",
-        "base_url": "https://api.moonshot.cn/v1",
-        "default_model": "moonshot-v1-8k",
-    },
-    Provider.ZHIPU: {
-        "name": "智谱 GLM",
-        "base_url": "https://open.bigmodel.cn/api/paas/v4",
-        "default_model": "glm-4-flash",
-    },
-    Provider.HUNYUAN: {
-        "name": "腾讯混元",
-        "base_url": "https://hunyuan.cloud.tencent.com/hunyuan-vision-api",
-        "default_model": "hunyuan",
-    },
-    Provider.YI: {
-        "name": "零一万物 Yi",
-        "base_url": "https://api.lingyiwanwu.com/v1",
-        "default_model": "yi-medium",
-    },
-}
 
 
 @dataclass
@@ -145,14 +76,12 @@ AI 写作的常见特征包括：
         api_key: str,
         provider: str = "openai",
         base_url: str = "",
-        model: str = "",
+        model: str = "gpt-4",
     ) -> None:
         self.api_key = api_key
-        self.provider = Provider(provider) if isinstance(provider, str) else provider
-        self._config = PROVIDER_CONFIG.get(self.provider, PROVIDER_CONFIG[Provider.OPENAI])
-        # 如果指定了 base_url 或 model，使用自定义值
-        self.base_url = base_url or self._config["base_url"]
-        self.model = model or self._config["default_model"]
+        self.provider = provider
+        self.base_url = base_url
+        self.model = model
         self._client = httpx.AsyncClient(timeout=120.0)
 
     async def humanize(
@@ -230,21 +159,10 @@ AI 写作的常见特征包括：
 
     async def _call_ai(self, prompt: str) -> str:
         """调用 AI API"""
-        # 所有 provider 都使用 OpenAI 兼容格式
-        return await self._call_openai_compatible(prompt)
+        base_url = self.base_url or "https://api.openai.com/v1"
 
-    def _is_custom_config(self) -> bool:
-        """检查是否使用了自定义配置"""
-        default_config = PROVIDER_CONFIG.get(self.provider, PROVIDER_CONFIG[Provider.OPENAI])
-        return (
-            self.base_url != default_config["base_url"]
-            or self.model != default_config["default_model"]
-        )
-
-    async def _call_openai_compatible(self, prompt: str) -> str:
-        """调用 OpenAI 兼容格式的 API"""
         response = await self._client.post(
-            f"{self.base_url}/chat/completions",
+            f"{base_url}/chat/completions",
             headers={
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
@@ -261,15 +179,7 @@ AI 写作的常见特征包括：
 
         response.raise_for_status()
         data = response.json()
-
-        # 兼容不同 provider 的响应格式
-        if "choices" in data:
-            return data["choices"][0]["message"]["content"]
-        elif "output" in data:
-            # 某些 provider 可能使用 output 字段
-            return data["output"]["choices"][0]["message"]["content"]
-        else:
-            raise ValueError(f"Unexpected response format: {data}")
+        return data["choices"][0]["message"]["content"]
 
     async def close(self) -> None:
         """关闭客户端连接"""
@@ -282,7 +192,7 @@ async def humanize_content(
     intensity: str = "medium",
     provider: str = "openai",
     base_url: str = "",
-    model: str = "",
+    model: str = "gpt-4",
 ) -> HumanizeResult:
     """
     快捷函数：对内容进行去痕处理
@@ -291,9 +201,9 @@ async def humanize_content(
         content: 原始内容
         api_key: API 密钥
         intensity: 处理强度
-        provider: AI 提供商 (openai/qwen/doubao/minimax/moonshot/zhipu/hunyuan/yi/custom)
-        base_url: API 基础 URL (仅在 custom provider 时使用)
-        model: 模型名称 (留空则使用 provider 默认模型)
+        provider: AI 提供商
+        base_url: API 基础 URL
+        model: 模型名称
 
     Returns:
         HumanizeResult
