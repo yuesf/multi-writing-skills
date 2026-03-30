@@ -135,7 +135,20 @@ cd wechat-publisher
 uv sync
 uv run openclaw --help
 ```
+## 发布到 clawhub
 
+```bash
+clawhub publish ./multi-writing-skills \
+  --slug multi-writing-skills \
+  --name "multi-writing-skills" \
+  --version 1.1.1 \
+  --tags latest \
+  --changelog "新增 AI 图片生成功能说明"
+```
+
+## 作者
+
+yuesf
 ## 许可证
 
 MIT
