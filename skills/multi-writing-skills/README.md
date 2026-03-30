@@ -10,7 +10,7 @@
 - **图片上传**: 自动上传到各平台图床
 - **AI 写作助手**: 5种写作风格支持
 - **AI 去痕**: 去除 AI 写作痕迹
-- **图片生成**: 支持 OpenAI DALL-E、Gemini、ModelScope
+- **图片生成**: 支持 ModelScope、阿里百炼、Minimax
 
 ## 安装
 
@@ -93,10 +93,10 @@ openclaw humanize article.md -o article_clean.md
 生成文章封面图片：
 
 ```bash
-openclaw generate-image "一只可爱的猫咪" --provider openai
+openclaw generate-image "一只可爱的猫咪"
 ```
 
-支持 OpenAI DALL-E、Gemini、ModelScope。
+支持 ModelScope、阿里百炼（Minimax）。
 
 ## Claude Code 集成
 

@@ -1,6 +1,6 @@
 [project]
 name = "multi-writing-skills"
-version = "0.1.0"
+version = "1.1.1"
 description = "多平台 Markdown 发布工具，支持微信公众号、知乎、今日头条"
 readme = "README.md"
 requires-python = ">=3.12"

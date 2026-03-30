@@ -509,13 +509,20 @@ def humanize(
 @app.command("generate-image")
 def generate_image(
     prompt: str = typer.Argument(..., help="图片描述"),
-    provider: str = typer.Option("openai", "--provider", "-p", help="图片生成 Provider (openai/gemini/modelscope)"),
+    provider: str = typer.Option("openai", "--provider", "-p", help="图片生成 Provider (openai/gemini/modelscope/minimax)"),
     size: str = typer.Option("1024x1024", "--size", "-s", help="图片尺寸"),
     style: Optional[str] = typer.Option(None, "--style", help="图片风格"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="输出文件路径"),
 ) -> None:
     """AI 图片生成"""
-    if not settings.ai.api_key:
+    import os
+
+    # MiniMax 支持使用 MINIMAX_API_KEY 环境变量
+    if provider == "minimax":
+        if not os.environ.get("MINIMAX_API_KEY") and not settings.ai.api_key:
+            console.print("[red]请设置 MINIMAX_API_KEY 环境变量[/red]")
+            raise typer.Exit(1)
+    elif not settings.ai.api_key:
         console.print("[red]请先配置 AI API Key[/red]")
         raise typer.Exit(1)
 
@@ -542,6 +549,15 @@ def generate_image(
             from .image.providers.modelscope import ModelScopeProvider
 
             p = ModelScopeProvider(api_key=settings.ai.api_key)
+            result = await p.generate(prompt, size, style)
+            await p.close()
+            return result.success, result.message or "", result.image_url
+
+        elif provider == "minimax":
+            from .image.providers.minimax import MiniMaxProvider
+
+            api_key = os.environ.get("MINIMAX_API_KEY") or settings.ai.api_key
+            p = MiniMaxProvider(api_key=api_key)
             result = await p.generate(prompt, size, style)
             await p.close()
             return result.success, result.message or "", result.image_url

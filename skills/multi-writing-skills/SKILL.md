@@ -9,7 +9,7 @@
 - **代码块格式化**: 自动处理缩进和换行，微信公众号完美展示代码
 - **AI 写作助手**: 多种写作风格支持
 - **AI 去痕**: 去除 AI 写作痕迹
-- **图片生成**: 支持 OpenAI DALL-E、Gemini、ModelScope
+- **AI 图片生成**: 支持 ModelScope、阿里百炼、Minimax，可生成文章封面配图
 
 ## 触发条件
 
@@ -51,6 +51,9 @@ openclaw write "写一篇关于Python的文章"
 
 # AI 去痕
 openclaw humanize article.md -o article_clean.md
+
+# AI 图片生成
+openclaw generate-image "一只在海边看日出的猫" --provider minimax --size 1024x1024 -o cover.png
 ```
 
 ## 发布到 clawhub
@@ -59,9 +62,9 @@ openclaw humanize article.md -o article_clean.md
 clawhub publish ./multi-writing-skills \
   --slug multi-writing-skills \
   --name "multi-writing-skills" \
-  --version 1.0.0 \
+  --version 1.1.1 \
   --tags latest \
-  --changelog "首次发布"
+  --changelog "新增 AI 图片生成功能说明"
 ```
 
 ## 作者
