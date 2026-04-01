@@ -157,6 +157,7 @@ def convert(
     css: Optional[str] = typer.Option(None, "--css", help="CSS 文件路径或 URL（兼容 wenyan-cli 格式）"),
     use_api: bool = typer.Option(False, "--api", help="使用 mdnice API 模式转换（推荐，排版更精美）"),
     use_ai: bool = typer.Option(False, "--ai", help="使用 AI 模式转换"),
+    pdf: bool = typer.Option(False, "--pdf", help="输出为 PDF 文件（需要 ReportLab）"),
 ) -> None:
     """转换 Markdown 或直接发布 HTML 到指定平台
 
@@ -271,6 +272,25 @@ def convert(
     if output:
         output.write_text(html_content, encoding="utf-8")
         console.print(f"[green]已保存到: {output}[/green]")
+
+    # PDF 输出（仅支持 Markdown 文件）
+    if pdf:
+        if is_html:
+            console.print("[yellow]PDF 输出仅支持 Markdown 文件，HTML 文件请先转换回 Markdown[/yellow]")
+        else:
+            try:
+                from .pdf.converter import markdown_to_pdf
+            except ImportError:
+                console.print("[red]PDF 支持需要安装 ReportLab：pip install reportlab[/red]")
+                raise typer.Exit(1)
+
+            pdf_output = output.with_suffix(".pdf") if output else Path(file.stem + ".pdf")
+            ok = markdown_to_pdf(content, str(pdf_output), title=title)
+            if ok:
+                console.print(f"[green]PDF 生成成功：{pdf_output}[/green]")
+            else:
+                console.print(f"[red]PDF 生成失败[/red]")
+                raise typer.Exit(1)
 
     if draft:
         # 支持多平台发布
@@ -509,7 +529,7 @@ def humanize(
 @app.command("generate-image")
 def generate_image(
     prompt: str = typer.Argument(..., help="图片描述"),
-    provider: str = typer.Option("openai", "--provider", "-p", help="图片生成 Provider (openai/gemini/modelscope/minimax)"),
+    provider: str = typer.Option("openai", "--provider", "-p", help="图片生成 Provider (openai/gemini/modelscope/minimax/zhipu/doubao)"),
     size: str = typer.Option("1024x1024", "--size", "-s", help="图片尺寸"),
     style: Optional[str] = typer.Option(None, "--style", help="图片风格"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="输出文件路径"),
@@ -558,6 +578,22 @@ def generate_image(
 
             api_key = os.environ.get("MINIMAX_API_KEY") or settings.ai.api_key
             p = MiniMaxProvider(api_key=api_key)
+            result = await p.generate(prompt, size, style)
+            await p.close()
+            return result.success, result.message or "", result.image_url
+
+        elif provider == "zhipu":
+            from .image.providers.zhipu import ZhipuProvider
+
+            p = ZhipuProvider(api_key=settings.ai.api_key)
+            result = await p.generate(prompt, size, style)
+            await p.close()
+            return result.success, result.message or "", result.image_url
+
+        elif provider == "doubao":
+            from .image.providers.doubao import DoubaoProvider
+
+            p = DoubaoProvider(api_key=settings.ai.api_key)
             result = await p.generate(prompt, size, style)
             await p.close()
             return result.success, result.message or "", result.image_url
